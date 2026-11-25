@@ -190,6 +190,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .amountrow { display: flex; align-items: baseline; gap: 10px; margin-top: 14px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
 .amountrow input { flex: 1; min-width: 0; background: none; border: 0; color: var(--fg); font-family: var(--font-display); font-weight: 600; font-size: 28px; padding: 0; letter-spacing: -0.02em; }
 .amountrow input::placeholder, .field input::placeholder, .databox textarea::placeholder { color: var(--muted); opacity: 0.55; }
+.amountrow.on { border-bottom-color: var(--accent); }
+.amountrow input { cursor: pointer; caret-color: transparent; }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; touch-action: manipulation; }
+.pad[hidden] { display: none; }
+.pad button { height: 42px; border-radius: 10px; background: var(--bg); color: var(--fg); font-family: var(--font-display); font-size: 21px; font-weight: 600; display: flex; align-items: center; justify-content: center; -webkit-user-select: none; user-select: none; }
+.pad button:active { background: var(--surface-2); }
 .amountrow span { color: var(--muted); font-weight: 700; letter-spacing: 0.06em; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border-radius: 18px; background: var(--bg); font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
@@ -400,7 +406,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         <button type="button" data-type="tr" aria-pressed="false">Перевод</button>
       </div>
       <div class="amountrow">
-        <input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Сумма">
+        <input id="amount" type="text" inputmode="none" readonly autocomplete="off" placeholder="0" aria-label="Сумма">
         <span>MDL</span>
       </div>
       <div class="field" id="catField">
@@ -427,6 +433,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       </div>
     </div>
     <div class="sheetfoot">
+      <div class="pad" id="pad" role="group" aria-label="Клавиатура суммы">
+        <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+        <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+        <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+        <button type="button" data-k=",">,</button><button type="button" data-k="0">0</button>
+        <button type="button" data-k="bs" aria-label="Стереть"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M13 9.5l5 5M18 9.5l-5 5"/></svg></button>
+      </div>
       <div class="err" id="err" role="alert"></div>
       <div class="actions">
         <button type="button" class="del" id="del" hidden>Удалить</button>
@@ -1699,6 +1712,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       $('#date').value = inView ? ymd(today) : view.y + '-' + pad(view.m + 1) + '-01';
       $('#note').value = '';
     }
+    setPad(true);
     $('#scrim').hidden = false;
     lockBody();
     try { if (tg && tg.BackButton) { tg.BackButton.show(); } } catch (e) {}
@@ -1995,6 +2009,29 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     renderChips();
   });
 
+  function setPad(on) {
+    $('#pad').hidden = !on;
+    $('.amountrow').classList.toggle('on', !!on);
+  }
+  function padKey(k) {
+    var inp = $('#amount'), v = inp.value;
+    if (k === 'bs') v = v.slice(0, -1);
+    else if (k === ',') { if (v.indexOf(',') < 0 && v.indexOf('.') < 0) v = (v || '0') + ','; }
+    else {
+      var i = v.search(/[.,]/);
+      if (i >= 0) { if (v.length - i - 1 < 2) v += k; }
+      else if (v.length < 9) v = (v === '0' ? '' : v) + k;
+    }
+    inp.value = v;
+    $('#err').textContent = '';
+    try { if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged(); } catch (e) {}
+  }
+  $('#pad').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-k]');
+    if (b) padKey(b.getAttribute('data-k'));
+  });
+  $('#amount').addEventListener('click', function () { try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {} setPad(true); });
+  ['#note', '#date'].forEach(function (q) { $(q).addEventListener('focus', function () { setPad(false); }); });
   $('#amount').addEventListener('input', function () {
     var v = this.value.replace(/[^\d.,\s]/g, '');
     if (v !== this.value) this.value = v;
@@ -2181,7 +2218,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   });
 
   /* ---------- export, backup, restore ---------- */
-  var VERSION = '3.1 · 25.11.2026';
+  var VERSION = '3.2 · 25.11.2026';
   $('#ver').textContent = 'Версия ' + VERSION;
   function plural(n, f) { var a = n % 100, b = n % 10; return (a > 10 && a < 15) ? f[2] : (b === 1 ? f[0] : (b > 1 && b < 5 ? f[1] : f[2])); }
   function recs(n) { return n + ' ' + plural(n, ['запись', 'записи', 'записей']); }
