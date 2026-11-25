@@ -79,7 +79,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 /* balance */
 .balance { padding-block: 8px 22px; border-bottom: 1px solid var(--line); }
 .balance.compact { padding-bottom: 14px; }
-.balance.compact .alltime, .balance.compact .demo { display: none; }
+.balance.compact .mstat, .balance.compact .demo { display: none; }
 .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 .big { font-family: var(--font-display); font-weight: 600; font-size: clamp(28px, 9vw, 38px); letter-spacing: -0.02em; line-height: 1.15; margin-top: 6px; overflow-wrap: anywhere; }
 .big .cur { font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; margin-left: 6px; }
@@ -88,8 +88,30 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .split .v { font-size: 19px; font-weight: 700; margin-top: 4px; overflow-wrap: anywhere; }
 .v.inc { color: var(--inc); }
 .v.exp { color: var(--exp); }
-.alltime { margin-top: 16px; font-size: 13px; color: var(--muted); }
-.alltime b { color: var(--fg); font-weight: 600; }
+.mstat { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; font-size: 13px; color: var(--muted); }
+.mstat:empty { display: none; }
+.mstat .badge { font-weight: 700; padding: 6px 10px; border-radius: 14px; background: var(--surface); color: var(--fg); min-width: 0; overflow-wrap: anywhere; }
+.mstat .badge.ok { color: var(--inc); }
+.mstat .badge.bad { color: var(--exp); }
+.mstat button { color: var(--accent); font-weight: 700; white-space: nowrap; padding: 8px 4px; }
+.mstat .txt { min-width: 0; overflow-wrap: anywhere; }
+#clBox { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.62); display: flex; align-items: center; justify-content: center; padding: 16px; overscroll-behavior: contain; }
+#clBox[hidden] { display: none; }
+.clcard { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; width: 100%; max-width: 380px; max-height: 88vh; overflow-y: auto; padding: 18px; }
+.clcard h2 { font-size: 18px; margin: 0 0 4px; }
+.clcard .sum { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; font-weight: 700; font-size: 15px; }
+.clcard .hint { font-size: 13px; color: var(--muted); margin-top: 12px; line-height: 1.4; }
+.clcard .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; }
+.clcard .row .nm { min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.clcard .row .nm small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.clcard input { width: 128px; flex: none; font-size: 16px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: right; }
+.clcard .err { color: var(--exp); font-size: 13px; min-height: 18px; margin-top: 10px; }
+.clcard .btns { display: flex; gap: 10px; margin-top: 8px; }
+.clcard .btns button { flex: 1; padding: 13px 8px; border-radius: 12px; font-weight: 700; background: var(--bg); color: var(--fg); border: 1px solid var(--line); }
+.clcard .btns button.go { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.hint2 { margin-top: 12px; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.toast.act { pointer-events: auto; display: flex; align-items: center; gap: 12px; }
+.toast .tact { color: var(--bg); font-weight: 800; text-decoration: underline; padding: 2px 4px; }
 
 /* demo banner */
 .demo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 10px 12px; background: var(--surface); border-radius: 10px; font-size: 13px; color: var(--muted); }
@@ -303,13 +325,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   </header>
 
   <section class="balance" id="balanceSec" aria-label="Итоги месяца">
-    <div class="eyebrow">Баланс месяца</div>
+    <div class="eyebrow" id="balLbl">Остаток</div>
     <div class="big num" id="balance"></div>
     <div class="split">
       <div><div class="eyebrow">Доходы</div><div class="v inc num" id="inc"></div></div>
       <div><div class="eyebrow">Расходы</div><div class="v exp num" id="exp"></div></div>
     </div>
-    <div class="alltime"><span id="alltimeLbl">Всего на счетах: </span><b class="num" id="alltime"></b></div>
+    <div class="mstat" id="mstat"></div>
     <div class="demo" id="demo" hidden>
       <span>Сейчас показаны примеры записей.</span>
       <button id="clearDemo">Удалить примеры</button>
@@ -415,7 +437,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 </div>
 
 <div class="fx" id="fx" aria-hidden="true"></div>
-<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div id="clBox" hidden>
+    <div class="clcard" role="dialog" aria-modal="true" aria-labelledby="clTitle">
+      <h2 id="clTitle"></h2>
+      <div class="sum"><span id="clInc"></span><span id="clExp"></span></div>
+      <div class="hint" id="clHint"></div>
+      <div id="clRows"></div>
+      <div class="err" id="clErr"></div>
+      <div class="btns"><button type="button" id="clCancel">Отмена</button><button type="button" id="clOk" class="go">Закрыть месяц</button></div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script>
 (function () {
@@ -476,7 +508,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
   }
   function contrast(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
-  var store = { tx: [], del: {}, cfg: defCfg(), lastAc: '', seeded: false };
+  var store = { tx: [], del: {}, cl: {}, cfg: defCfg(), lastAc: '', seeded: false };
   var view = { y: 0, m: 0 };
   var form = { type: 'exp', cat: null, id: null };
 
@@ -490,8 +522,31 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   function catList(type) { return store.cfg.cats[type] || []; }
   function catColor(type, name) {
     var list = catList(type);
-    for (var i = 0; i < list.length; i++) if (list[i][0] === name) return list[i][1];
+    for (var i = 0; i < list.length; i++) if (list[i][0] === name) return readable(list[i][1]);
     return '#8e98ab';
+  }
+  /* lighten colours that would vanish on the dark surface */
+  function readable(h) {
+    if (!HEX.test(h || '')) return '#8e98ab';
+    var c = h.toLowerCase(), k = 0;
+    while (contrast(c, '#151b25') < 3 && k < 12) {
+      var v = [1, 3, 5].map(function (i) { var x = parseInt(c.substr(i, 2), 16); x = Math.round(x + (255 - x) * 0.15); return (x < 16 ? '0' : '') + x.toString(16); });
+      c = '#' + v.join(''); k++;
+    }
+    return c;
+  }
+  function normCl(o) {
+    var r = {};
+    if (o && typeof o === 'object') Object.keys(o).forEach(function (k) {
+      var e = o[k];
+      if (/^\d{4}-(0[1-9]|1[0-2])$/.test(k) && e && typeof e === 'object') r[k] = { u: +e.u || 0, o: e.o ? 1 : 0 };
+    });
+    return r;
+  }
+  function mergeCl(a, b) {
+    var r = normCl(a), n = normCl(b);
+    Object.keys(n).forEach(function (k) { if (!r[k] || n[k].u > r[k].u) r[k] = n[k]; });
+    return r;
   }
   function applyCfg() {
     var c = store.cfg.colors, r = document.documentElement.style;
@@ -535,6 +590,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
           store = {
             tx: o.tx.filter(sane),
             del: (o.del && typeof o.del === 'object') ? o.del : {},
+            cl: normCl(o.cl),
             cfg: normCfg(o.cfg),
             lastAc: typeof o.lastAc === 'string' ? o.lastAc : '',
             seeded: !!o.seeded || o.tx.length > 0,
@@ -581,7 +637,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 
   /* Cloud format: chunks c0..cN (JSON arrays of rows) plus meta {n,u} and a separate cfg key.
      Row: [id, 0|1|3 (expense|income|transfer), amount, category, date, note, demo, updatedAt, account, toAccount]
-     Deleted record: [id, 2, deletedAt] */
+     Deleted record: [id, 2, deletedAt]; month closing: ['YYYY-MM', 4, updatedAt, reopened] */
   function pack() {
     var now = Date.now();
     if (!store.del) store.del = {};
@@ -590,6 +646,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       return [t.id, t.type === 'tr' ? 3 : (t.type === 'inc' ? 1 : 0), t.amount, t.cat, t.date, t.note || '', t.demo ? 1 : 0, t.u || 0, t.ac || '', t.to || ''];
     });
     Object.keys(store.del).sort().forEach(function (id) { rows.push([+id, 2, store.del[id]]); });
+    var clk = normCl(store.cl); store.cl = clk;
+    Object.keys(clk).sort().forEach(function (k) { rows.push([k, 4, clk[k].u, clk[k].o]); });
     var chunks = [], cur = [], len = 2;
     rows.forEach(function (r) {
       var str = JSON.stringify(r);
@@ -602,10 +660,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   }
 
   function unpack(chunks) {
-    var tx = [], del = {};
+    var tx = [], del = {}, cl = {};
     chunks.forEach(function (str) {
       JSON.parse(str || '[]').forEach(function (r) {
         if (r[1] === 2) { del[r[0]] = r[2] || 0; return; }
+        if (r[1] === 4) { var one = {}; one[r[0]] = { u: r[2] || 0, o: r[3] ? 1 : 0 }; cl = mergeCl(cl, one); return; }
         var t = { id: r[0], type: r[1] === 3 ? 'tr' : (r[1] ? 'inc' : 'exp'), amount: r[2], cat: r[3], date: r[4], note: typeof r[5] === 'string' ? r[5] : '', u: r[7] || 0 };
         if (r[6]) t.demo = true;
         if (typeof r[8] === 'string' && r[8]) t.ac = r[8];
@@ -613,7 +672,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         if (sane(t)) tx.push(t);
       });
     });
-    return { tx: tx, del: del };
+    return { tx: tx, del: del, cl: cl };
   }
 
   /* Union by id, newest edit wins, a deletion wins over an older edit */
@@ -648,7 +707,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       var m;
       try { m = JSON.parse(val); } catch (e) { cb('err'); return; }
       if (!(m && m.n >= 0 && m.n <= 1000)) { cb('err'); return; }
-      if (m.n === 0) { cb('ok', { tx: [], del: {}, n: 0, chunks: [] }); return; }
+      if (m.n === 0) { cb('ok', { tx: [], del: {}, cl: {}, n: 0, chunks: [] }); return; }
       var keys = [];
       for (var i = 0; i < m.n; i++) keys.push('c' + i);
       cloud.getItems(keys, function (err2, vals) {
@@ -656,7 +715,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         try {
           var chunks = keys.map(function (k) { return (vals && vals[k]) || '[]'; });
           var u = unpack(chunks);
-          cb('ok', { tx: u.tx, del: u.del, n: m.n, chunks: chunks });
+          cb('ok', { tx: u.tx, del: u.del, cl: u.cl, n: m.n, chunks: chunks });
         } catch (e) { cb('err'); }
       });
     });
@@ -769,6 +828,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       cloudChunks = data.n;
       var m = merge(store.tx, store.del || {}, data.tx, data.del);
       store.tx = m.tx; store.del = m.del; store.seeded = true;
+      store.cl = mergeCl(store.cl, data.cl);
       fixAc();
       saveLocal();
       render();
@@ -894,10 +954,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     return acFilter === 'all' ? isIncluded(t.ac) : t.ac === acFilter;
   }
   function visible(t) { return acFilter === 'all' || t.ac === acFilter || (t.type === 'tr' && t.to === acFilter); }
-  function balances() {
+  function balances(upTo) {
     var b = {};
     store.cfg.accts.forEach(function (a) { b[a.id] = a.s || 0; });
     store.tx.forEach(function (t) {
+      if (upTo && t.date > upTo) return;
       var v = t.amount;
       if (t.type === 'inc') b[t.ac] = (b[t.ac] || 0) + v;
       else if (t.type === 'exp') b[t.ac] = (b[t.ac] || 0) - v;
@@ -921,19 +982,20 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     var items = monthItems.filter(visible), stat = monthItems.filter(counted);
     var inc = 0, exp = 0, all = 0;
     stat.forEach(function (t) { if (t.type === 'inc') inc += t.amount; else exp += t.amount; });
-    var bm = balances();
+    var curKey = now.getFullYear() + '-' + pad(now.getMonth() + 1);
+    var upTo = pref < curKey ? monthEnd(pref) : null;
+    var bm = balances(upTo);
     if (acFilter === 'all') accts().forEach(function (a) { if (a.x) all += bm[a.id] || 0; });
     else all = bm[acFilter] || 0;
 
-    var bal = inc - exp;
     var b = $('#balance');
-    b.textContent = signed(r2(bal));
+    $('#balLbl').textContent = (upTo ? 'Остаток на конец месяца' : 'Остаток') + (acFilter === 'all' ? '' : ' · ' + acName(acFilter));
+    b.textContent = signed(r2(all));
     var cur = el('span', 'cur', 'MDL');
     b.appendChild(cur);
     $('#inc').textContent = '+' + money(inc);
     $('#exp').textContent = '−' + money(exp);
-    $('#alltimeLbl').textContent = acFilter === 'all' ? 'Всего на счетах: ' : 'Остаток на счёте «' + acName(acFilter) + '»: ';
-    $('#alltime').textContent = signed(r2(all)) + ' MDL';
+    renderMstat(pref, pref > curKey);
     $('#demo').hidden = !store.tx.some(function (t) { return t.demo; });
 
     var sec = $('#balanceSec');
@@ -949,6 +1011,34 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     else if (tab === 'charts') renderCharts(stat);
     else if (tab === 'acc') refreshAccountsIfIdle();
     else refreshSettingsIfIdle();
+  }
+
+  function monthEnd(ym) { var p = ym.split('-'); return ym + '-' + pad(new Date(+p[0], +p[1], 0).getDate()); }
+  function isClosed(ym) { var c = store.cl && store.cl[ym]; return !!c && !c.o; }
+  function monthResult(ym) {
+    var inc = 0, exp = 0, n = 0;
+    store.tx.forEach(function (t) {
+      if (t.date.indexOf(ym) !== 0 || t.type === 'tr' || !isIncluded(t.ac)) return;
+      n++;
+      if (t.type === 'inc') inc += t.amount; else exp += t.amount;
+    });
+    return { inc: r2(inc), exp: r2(exp), n: n, res: r2(inc - exp) };
+  }
+  function resWord(v) { return v > 0 ? 'в плюсе +' + money(v) : (v < 0 ? 'в минусе −' + money(-v) : 'в нуле'); }
+  var reopenTimer = null;
+  function renderMstat(ym, future) {
+    var box = $('#mstat'), r = monthResult(ym);
+    box.textContent = '';
+    clearTimeout(reopenTimer);
+    if (isClosed(ym)) {
+      box.appendChild(el('span', 'badge ' + (r.res > 0 ? 'ok' : (r.res < 0 ? 'bad' : '')), 'Месяц закрыт: ' + resWord(r.res)));
+      var rb = el('button', null, 'Открыть'); rb.type = 'button'; rb.setAttribute('data-act', 'reopen');
+      box.appendChild(rb);
+    } else if (r.n && !(future && !r.n)) {
+      box.appendChild(el('span', 'txt', 'Итог месяца: ' + (r.res > 0 ? '+' : '') + signed(r.res)));
+      var cb = el('button', null, 'Закрыть месяц'); cb.type = 'button'; cb.setAttribute('data-act', 'close');
+      box.appendChild(cb);
+    }
   }
 
   function renderAcBar() {
@@ -1363,7 +1453,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     tbl.appendChild(hd);
     months.slice().reverse().forEach(function (o5) {
       var r2 = el('div', 'mrow num' + (o5.key === cur ? ' cur' : ''));
-      r2.appendChild(el('span', null, MONTHS[o5.m]));
+      r2.appendChild(el('span', null, MONTHS[o5.m] + (isClosed(o5.key) ? ' ✓' : '')));
       var a1 = el('span', null, money(o5.inc)); a1.style.color = 'var(--inc)';
       var a2 = el('span', null, money(o5.exp)); a2.style.color = 'var(--exp)';
       var bal2 = o5.inc - o5.exp, a3 = el('span', null, signed(bal2));
@@ -1372,6 +1462,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       tbl.appendChild(r2);
     });
     box.appendChild(tbl);
+    var cl = months.filter(function (o6) { return isClosed(o6.key); }), pl = 0;
+    cl.forEach(function (o7) { if (monthResult(o7.key).res > 0) pl++; });
+    box.appendChild(el('div', 'hint2', cl.length ? '✓ закрытых месяцев: ' + cl.length + ', из них в плюсе: ' + pl + ', в минусе или в нуле: ' + (cl.length - pl) : 'Закрывайте месяц на главной вкладке — здесь появится отметка ✓ и итог: в плюсе или в минусе.'));
   }
 
   /* ---------- settings ---------- */
@@ -1582,6 +1675,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     var t = null;
     if (id) store.tx.forEach(function (x) { if (x.id === id) t = x; });
     form.id = t ? id : null;
+    form.clOk = '';
     $('#sheetTitle').textContent = t ? 'Изменить запись' : (type === 'tr' ? 'Новый перевод' : 'Новая запись');
     $('#del').hidden = !t;
     resetDel();
@@ -1726,11 +1820,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     a.onfinish = finishClose;
     setTimeout(function () { if (closing) finishClose(); }, 500);
   }
-  try { if (tg && tg.BackButton) { tg.BackButton.onClick(closeSheet); } } catch (e) {}
+  try { if (tg && tg.BackButton) { tg.BackButton.onClick(function () { if (!$('#clBox').hidden) closeCl(); else closeSheet(); }); } } catch (e) {}
 
-  function toast(msg, ms) {
+  function toast(msg, ms, label, fn) {
     var t = $('#toast');
     t.textContent = msg;
+    t.classList.toggle('act', !!label);
+    if (label) {
+      var tb = el('button', 'tact', label); tb.type = 'button';
+      tb.addEventListener('click', function () { t.hidden = true; clearTimeout(toast._t); fn(); });
+      t.appendChild(tb);
+    }
     t.hidden = false;
     clearTimeout(toast._t);
     toast._t = setTimeout(function () { t.hidden = true; }, ms || 2200);
@@ -1876,7 +1976,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   });
   $('#close').addEventListener('click', closeSheet);
   $('#scrim').addEventListener('click', function (e) { if (e.target === this) closeSheet(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#scrim').hidden) closeSheet(); });
+  document.addEventListener('keydown', function (e) { if (e.key !== 'Escape') return; if (!$('#clBox').hidden) closeCl(); else if (!$('#scrim').hidden) closeSheet(); });
   $('#list').addEventListener('click', function (e) {
     var b = e.target.closest('.item');
     if (b) openSheet(+b.getAttribute('data-id'), { x: e.clientX, y: e.clientY });
@@ -1914,6 +2014,15 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     amount = Math.round(amount * 100) / 100;
     var note = $('#note').value.trim();
     var editing = false, now = Date.now();
+    var yms = [date.slice(0, 7)];
+    if (form.id) store.tx.forEach(function (t0) { if (t0.id === form.id && yms.indexOf(t0.date.slice(0, 7)) < 0) yms.push(t0.date.slice(0, 7)); });
+    var locked = yms.filter(isClosed);
+    if (locked.length && form.clOk !== locked.join()) {
+      form.clOk = locked.join();
+      $('#err').textContent = 'Этот месяц закрыт. Нажмите «Сохранить» ещё раз — месяц откроется заново.';
+      return;
+    }
+    if (locked.length) reopenMonths(locked);
     if (form.id) {
       store.tx.forEach(function (t) {
         if (t.id === form.id) {
@@ -1943,17 +2052,24 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     var d = $('#del');
     if (!d.getAttribute('data-armed')) {
       d.setAttribute('data-armed', '1');
-      d.textContent = 'Точно удалить?';
+      var tt = null;
+      store.tx.forEach(function (t) { if (t.id === form.id) tt = t; });
+      d.textContent = (tt && isClosed(tt.date.slice(0, 7))) ? 'Месяц закрыт. Удалить?' : 'Точно удалить?';
       delTimer = setTimeout(resetDel, 4000);
       return;
     }
-    var id = form.id;
+    var id = form.id, gone = store.tx.filter(function (t) { return t.id === id; });
+    if (gone[0] && isClosed(gone[0].date.slice(0, 7))) reopenMonths([gone[0].date.slice(0, 7)]);
     removeTx(function (t) { return t.id === id; });
     save();
     closeSheet();
     render();
     haptic('warning');
-    toast('Запись удалена');
+    toast('Запись удалена', 6000, 'Отменить', function () {
+      var now2 = Date.now();
+      gone.forEach(function (t) { t.u = now2; if (store.del) delete store.del[t.id]; store.tx.push(t); });
+      save(); render(); toast('Запись возвращена');
+    });
   });
 
   $('#clearDemo').addEventListener('click', function () {
@@ -1976,13 +2092,96 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     w.removeAttribute('data-armed');
     w.textContent = 'Удалить все данные';
     removeTx(function () { return true; });
+    var nowW = Date.now();
+    Object.keys(store.cl || {}).forEach(function (k) { store.cl[k] = { u: nowW, o: 1 }; });
     save();
     render();
     toast('Все данные удалены');
   });
 
+  /* ---------- closing a month ---------- */
+  var clYm = null;
+  function reopenMonths(list) {
+    var now = Date.now();
+    if (!store.cl) store.cl = {};
+    list.forEach(function (k) { store.cl[k] = { u: now, o: 1 }; });
+  }
+  function openCl(ym) {
+    clYm = ym;
+    var r = monthResult(ym), p = ym.split('-'), end = monthEnd(ym);
+    var later = store.tx.some(function (t) { return t.date > end; });
+    var now = new Date(), isCur = ym === now.getFullYear() + '-' + pad(now.getMonth() + 1);
+    $('#clTitle').textContent = 'Закрыть ' + MONTHS[+p[1] - 1].toLowerCase() + ' ' + p[0];
+    $('#clInc').textContent = 'Доходы +' + money(r.inc);
+    $('#clExp').textContent = 'Расходы −' + money(r.exp);
+    $('#clInc').style.color = 'var(--inc)'; $('#clExp').style.color = 'var(--exp)';
+    var rows = $('#clRows'); rows.textContent = '';
+    if (later) {
+      $('#clHint').textContent = 'В более поздних месяцах уже есть записи, поэтому сверка остатков недоступна. Проверьте, что все доходы и расходы внесены, и закройте месяц.';
+    } else {
+      $('#clHint').textContent = 'Все доходы и расходы внесены? Для проверки введите реальный остаток на счетах (необязательно). Если он не совпадёт с записями, добавится запись «Корректировка при закрытии».';
+      var bm = balances(isCur ? null : end);
+      activeAccts().forEach(function (a) {
+        if (!a.x) return;
+        var row = el('div', 'row'), nm = el('div', 'nm', a.n);
+        nm.appendChild(el('small', null, 'по записям: ' + signed(r2(bm[a.id] || 0))));
+        var inp = document.createElement('input');
+        inp.type = 'text'; inp.inputMode = 'decimal'; inp.placeholder = 'как есть'; inp.setAttribute('data-ac', a.id); inp.setAttribute('aria-label', 'Реальный остаток: ' + a.n);
+        row.appendChild(nm); row.appendChild(inp); rows.appendChild(row);
+      });
+    }
+    $('#clErr').textContent = '';
+    $('#clBox').hidden = false;
+    try { if (tg && tg.BackButton) tg.BackButton.show(); } catch (e) {}
+  }
+  function closeCl() {
+    $('#clBox').hidden = true; clYm = null;
+    try { if (tg && tg.BackButton) tg.BackButton.hide(); } catch (e) {}
+  }
+  $('#clCancel').addEventListener('click', closeCl);
+  $('#clBox').addEventListener('click', function (e) { if (e.target === this) closeCl(); });
+  $('#clOk').addEventListener('click', function () {
+    if (!clYm || $('#clBox').hidden) return;
+    var ym = clYm, end = monthEnd(ym), now = new Date(), isCur = ym === now.getFullYear() + '-' + pad(now.getMonth() + 1);
+    var bm = balances(isCur ? null : end), adj = [], bad = false;
+    var inputs = $('#clRows').querySelectorAll('input[data-ac]');
+    Array.prototype.forEach.call(inputs, function (inp) {
+      var raw = inp.value.trim();
+      if (!raw) return;
+      var v = parseSigned(raw);
+      if (!isFinite(v) || Math.abs(v) > 1e9) { bad = true; return; }
+      var ac = inp.getAttribute('data-ac'), d = r2(v - (bm[ac] || 0));
+      if (Math.abs(d) >= 0.01) adj.push({ ac: ac, d: d });
+    });
+    if (bad) { $('#clErr').textContent = 'Проверьте суммы остатков, например 1250 или 99,50.'; return; }
+    var stamp = Date.now(), date = isCur && ymd(now) < end ? ymd(now) : end;
+    adj.forEach(function (a) {
+      store.tx.push({ id: newId(), type: a.d > 0 ? 'inc' : 'exp', amount: Math.abs(a.d), cat: 'Прочее', date: date, note: 'Корректировка при закрытии', ac: a.ac, u: stamp });
+    });
+    if (!store.cl) store.cl = {};
+    store.cl[ym] = { u: stamp, o: 0 };
+    save();
+    closeCl();
+    render();
+    haptic('success');
+    toast(adj.length ? 'Месяц закрыт, корректировок: ' + adj.length : 'Месяц закрыт');
+  });
+  $('#mstat').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]');
+    if (!b) return;
+    var ym = monthPrefix();
+    if (b.getAttribute('data-act') === 'close') { openCl(ym); return; }
+    if (!b.getAttribute('data-armed')) {
+      b.setAttribute('data-armed', '1'); b.textContent = 'Точно открыть?';
+      reopenTimer = setTimeout(function () { b.removeAttribute('data-armed'); b.textContent = 'Открыть'; }, 4000);
+      return;
+    }
+    clearTimeout(reopenTimer);
+    reopenMonths([ym]); save(); render(); toast('Месяц открыт');
+  });
+
   /* ---------- export, backup, restore ---------- */
-  var VERSION = '3.0 · 09.11.2026';
+  var VERSION = '3.1 · 25.11.2026';
   $('#ver').textContent = 'Версия ' + VERSION;
   function plural(n, f) { var a = n % 100, b = n % 10; return (a > 10 && a < 15) ? f[2] : (b === 1 ? f[0] : (b > 1 && b < 5 ? f[1] : f[2])); }
   function recs(n) { return n + ' ' + plural(n, ['запись', 'записи', 'записей']); }
@@ -2033,7 +2232,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     return lines.join('\n');
   }
   function backupText() {
-    return JSON.stringify({ app: 'moi-finansy', v: 3, at: new Date().toISOString(), tx: store.tx.slice().sort(function (a, b) { return a.id - b.id; }), cfg: store.cfg });
+    return JSON.stringify({ app: 'moi-finansy', v: 3, at: new Date().toISOString(), tx: store.tx.slice().sort(function (a, b) { return a.id - b.id; }), cfg: store.cfg, cl: normCl(store.cl) });
   }
 
   function parseCsv(text) {
@@ -2105,7 +2304,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       if (!sane(t) || !inRange(t.date)) { bad++; return; }
       items.push({ id: t.id, type: t.type, amount: r2(t.amount), date: t.date, cat: t.cat, note: typeof t.note === 'string' ? t.note.slice(0, 80) : '', acRef: { id: t.ac }, toRef: { id: t.to } });
     });
-    return { items: items, bad: bad, cfg: (bak.cfg && typeof bak.cfg === 'object') ? bak.cfg : null };
+    return { items: items, bad: bad, cl: normCl(bak.cl), cfg: (bak.cfg && typeof bak.cfg === 'object') ? bak.cfg : null };
   }
 
   /* Adds records that are not in the app yet. Existing ones are never changed. */
@@ -2202,6 +2401,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       added++;
     });
     fixAc();
+    if (parsed.cl) store.cl = mergeCl(store.cl, parsed.cl);
     if (cfgChanged) saveCfg();
     save();
     render();
